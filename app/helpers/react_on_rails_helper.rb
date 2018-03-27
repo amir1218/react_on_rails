@@ -109,26 +109,13 @@ module ReactOnRailsHelper
     end
   end
 
-  def react_component_hash(component_name, raw_options = {})
-    internal_result = internal_react_component(component_name, raw_options)
-    server_rendered_html = internal_result["result"]["html"]
-    console_script = internal_result["result"]["consoleReplayScript"]
+  def react_component_hash(component_name, raw_options = {}, &block)
+    use_caching = raw_options[:cache_key].present?
 
-    if server_rendered_html.is_a?(String) && internal_result["result"]["hasErrors"]
-      server_rendered_html = { COMPONENT_HTML_KEY => internal_result["result"]["html"] }
-    end
-
-    if server_rendered_html.is_a?(Hash)
-      build_react_component_result_for_server_rendered_hash(
-        server_rendered_html: server_rendered_html,
-        component_specification_tag: internal_result["tag"],
-        console_script: console_script,
-        options: internal_result["options"]
-      )
+    if use_caching
+      build_react_component_hash_cached(component_name, block, raw_options)
     else
-      raise "Generator function is expected to return an Object. See
-      https://github.com/shakacode/react_on_rails/blob/master/spec/dummy/client/app/startup/ReactHelmetServerApp.jsx
-      for an example of the necessary javascript configuration."
+      build_react_component_hash(component_name, raw_options)
     end
   end
 
@@ -241,6 +228,16 @@ module ReactOnRailsHelper
     end
   end
 
+  def build_react_component_hash_cached(component_name, block, raw_options)
+    check_caching_options!(raw_options, block)
+
+    ReactOnRails::ReactComponent::Cache.call(component_name, raw_options) do
+      sanitized_options = raw_options
+      sanitized_options[:props] = block.call
+      build_react_component_hash(component_name, sanitized_options)
+    end
+  end
+
   def check_caching_options!(raw_options, block)
     raise "Pass 'props' as a block if using caching" if raw_options.key?(:props) || block.nil?
   end
@@ -269,6 +266,29 @@ module ReactOnRailsHelper
       raise "server_rendered_html is expected to be a String. If you're trying to use a generator function to
       return a Hash to your ruby view code, then use react_component_hash instead of react_component and
       see https://github.com/shakacode/react_on_rails/blob/master/spec/dummy/client/app/startup/ReactHelmetServerApp.jsx
+      for an example of the necessary javascript configuration."
+    end
+  end
+
+  def build_react_component_hash(component_name, raw_options)
+    internal_result = internal_react_component(component_name, raw_options)
+    server_rendered_html = internal_result["result"]["html"]
+    console_script = internal_result["result"]["consoleReplayScript"]
+
+    if server_rendered_html.is_a?(String) && internal_result["result"]["hasErrors"]
+      server_rendered_html = { COMPONENT_HTML_KEY => internal_result["result"]["html"] }
+    end
+
+    if server_rendered_html.is_a?(Hash)
+      build_react_component_result_for_server_rendered_hash(
+        server_rendered_html: server_rendered_html,
+        component_specification_tag: internal_result["tag"],
+        console_script: console_script,
+        options: internal_result["options"]
+      )
+    else
+      raise "Generator function is expected to return an Object. See
+      https://github.com/shakacode/react_on_rails/blob/master/spec/dummy/client/app/startup/ReactHelmetServerApp.jsx
       for an example of the necessary javascript configuration."
     end
   end

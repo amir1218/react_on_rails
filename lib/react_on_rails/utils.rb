@@ -20,28 +20,31 @@ module ReactOnRails
       pathname.basename.to_s
     end
 
-    def self.server_bundle_file_name
-      File.join(
-        ReactOnRails.configuration.generated_assets_dir,
-        ReactOnRails.configuration.server_bundle_js_file
-      )
-    end
+    # Returns a string which should be used as a component in any cache key for
+    # react_component or react_component_hash. If server rendering, this value either
+    # the server bundle filename with the hash from webpack or an MD5 digest of the
+    # entire bundle. If server rendering is not used, you still need to configure
+    # ReactOnRails.configuration.server_bundle_js_file with a file that contains
+    # any JS code for components that you wish to cache.
+    def self.bundle_hash
+      return @bundle_hash if @bundle_hash && !Rails.env.development?
 
-    def self.server_bundle_file_hash
-      if Rails.env.development?
-        calculate_server_bundle_file_hash
-      else
-        @server_bundle_file_hash ||= calculate_server_bundle_file_hash
+      @bundle_hash = begin
+        server_bundle_basename = Pathname.new(server_bundle_js_file_path).basename.to_s
+
+        if ReactOnRails.configuration.server_bundle_js_file == server_bundle_basename
+          # There is no hash in the name
+          Digest::MD5.file(server_bundle_js_file_path)
+        else
+          # There is a hash already in the name
+          server_bundle_basename
+        end
       end
     end
 
     ###########################################################
     # PRIVATE API -- Subject to change
     ###########################################################
-
-    def self.calculate_server_bundle_file_hash
-      Digest::MD5.file(server_bundle_file_name)
-    end
 
     # https://forum.shakacode.com/t/yak-of-the-week-ruby-2-4-pathname-empty-changed-to-look-at-file-size/901
     # return object if truthy, else return nil

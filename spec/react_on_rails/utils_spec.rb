@@ -7,7 +7,7 @@ require_relative "spec_helper"
 
 module ReactOnRails
   RSpec.describe Utils do
-    describe "cache helpers .server_bundle_file_name and .bundle_file_name" do
+    describe "cache helpers .bundle_hash and .bundle_file_name" do
       context "and file in manifest", :webpacker do
         before do
           allow(Rails).to receive(:root).and_return(Pathname.new("."))
@@ -29,13 +29,37 @@ module ReactOnRails
           it { expect(subject).to eq("client-bundle-0123456789abcdef.js") }
         end
 
-        describe ".server_bundle_file_name" do
-          it "returns path for server bundle file name " do
-            allow(ReactOnRails.configuration)
-              .to receive(:server_bundle_js_file).and_return("server-bundle.js")
-            result = Utils.server_bundle_file_name
+        describe ".bundle_hash" do
+          context "server bundle with hash in webpack output filename" do
+            it "returns path for server bundle file name " do
+              allow(Webpacker).to receive_message_chain("manifest.lookup")
+                .with("webpack-bundle.js")
+                .and_return("/webpack/production/webpack-bundle-0123456789abcdef.js")
+              allow(ReactOnRails.configuration)
+                .to receive(:server_bundle_js_file).and_return("webpack-bundle.js")
 
-            expect(result).to eq("public/webpack/production/server-bundle.js")
+              result = Utils.bundle_hash
+
+              expect(result).to eq("webpack-bundle-0123456789abcdef.js")
+            end
+          end
+
+          context "server bundle without hash in webpack output filename" do
+            it "returns MD5 for server bundle file name" do
+              server_bundle_js_file = "webpack/production/webpack-bundle.js"
+              allow(Webpacker).to receive_message_chain("manifest.lookup")
+                .with("webpack-bundle.js")
+                .and_return(server_bundle_js_file)
+              allow(ReactOnRails.configuration)
+                .to receive(:server_bundle_js_file).and_return("webpack-bundle.js")
+              allow(Digest::MD5).to receive(:file)
+                .with("public/#{server_bundle_js_file}")
+                .and_return("foobarfoobar")
+
+              result = Utils.bundle_hash
+
+              expect(result).to eq("foobarfoobar")
+            end
           end
         end
       end

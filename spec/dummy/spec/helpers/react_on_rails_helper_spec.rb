@@ -201,13 +201,13 @@ describe ReactOnRailsHelper, type: :helper do
         end
 
         context "with 'prerender' == true" do
-          it "includes server bundle hash in the cache key" do
+          it "includes bundle hash in the cache key" do
             props = { a: 1, b: 2 }
             react_component("App", cache_key: "cache-key", prerender: true) do
               props
             end
 
-            expected_key = /server_bundle-#{ReactOnRails::Utils.server_bundle_file_hash}/
+            expected_key = /#{ReactOnRails::Utils.bundle_hash}/
             expect(cache_data.keys).to include(expected_key)
           end
         end
