@@ -177,6 +177,18 @@ describe ReactOnRailsHelper, type: :helper do
           expect(cache_data.first[1].value).to match(/div id="App-react-component-0"/)
         end
 
+        it "uses 'cache_key' method if available" do
+          props = { a: 1, b: 2 }
+          active_model = double
+          allow(active_model).to receive(:cache_key).and_return("xyz123")
+
+          react_component("App", cache_key: active_model) do
+            props
+          end
+
+          expect(cache_data.keys).to include(/xyz123/)
+        end
+
         it "doesn't call the block if content is cached" do
           react_component("App", cache_key: "cache-key") do
             { a: 1, b: 2 }
@@ -191,6 +203,7 @@ describe ReactOnRailsHelper, type: :helper do
           it "caches the content using cache keys" do
             props = { a: 1, b: 2 }
             cache_keys = %w[a b]
+
             react_component("App", cache_key: cache_keys) do
               props
             end
@@ -203,6 +216,7 @@ describe ReactOnRailsHelper, type: :helper do
         context "with 'prerender' == true" do
           it "includes bundle hash in the cache key" do
             props = { a: 1, b: 2 }
+
             react_component("App", cache_key: "cache-key", prerender: true) do
               props
             end

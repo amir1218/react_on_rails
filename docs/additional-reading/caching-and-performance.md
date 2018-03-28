@@ -5,22 +5,29 @@
 
 ### Fragment Caching
 
-If you wish to do fragment caching that includes React on Rails rendered components, be sure to
-include the bundle name of your server rendering bundle in your cache key. This is analogous to
-how Rails puts an MD5 hash of your views in the cache key so that if the views change, then your
-cache is busted. In the case of React code, if your React code changes, then your bundle name will
-change due to the typical inclusion of a hash in the name.
+Fragment caching is awesome with React on Rails!
+
+When doing fragment caching with React on Rails, the cache key must reflect
+your React code. This is analogous to how Rails puts an MD5 hash of your views in
+the cache key so that if the views change, then your cache is busted. In the case
+of React code, if your React code changes, then your bundle name will
+change if you are doing the inclusion of a hash in the name. However, if you are
+using a separate webpack configuration to generate the server bundle file,
+then you **must not** include the hash in the output filename or else you will
+have a race condition overwriting your `manifiest.json`. Regardless of which
+case you have React on Rails handles it.
 
 Even if you are not using server rendering, you need to configure:
 
-1. config value
-2. bundle for this config value with all JS for components to cache
+1. ReactOnRails.configuration.server_bundle_js_file
+2. A bundle for this config value with all your JS code
 
 #### Using the cache_key parameter in react_component or react_component_hash
 
 ```ruby
-react_component("App", cache_key: "cache-key", prerender: true) do
-  props
+
+react_component("App", cache_key: [@user, @post], prerender: true) do
+  some_slow_method_that_returns_props
 end
 ```
 

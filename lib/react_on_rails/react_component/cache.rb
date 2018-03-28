@@ -12,10 +12,14 @@ module ReactOnRails
         private
 
         def cache_key(component_name, options)
-          cache_keys = Array(options[:cache_key]).join("/")
-          result = "react_on_rails/#{component_name}/#{cache_keys}}"
-          result += "/#{ReactOnRails::Utils.bundle_hash}" if options[:prerender]
-          result
+          keys = [
+            "react_on_rails",
+            component_name,
+            options[:cache_key]
+          ]
+          keys.push(ReactOnRails::Utils.bundle_hash) if options[:prerender]
+
+          ActiveSupport::Cache.expand_cache_key(keys)
         end
       end
     end
