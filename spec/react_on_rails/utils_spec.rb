@@ -33,7 +33,6 @@ module ReactOnRails
           context "server bundle with hash in webpack output filename" do
             it "returns path for server bundle file name " do
               allow(Webpacker).to receive_message_chain("manifest.lookup")
-                .with("webpack-bundle.js")
                 .and_return("/webpack/production/webpack-bundle-0123456789abcdef.js")
               allow(ReactOnRails.configuration)
                 .to receive(:server_bundle_js_file).and_return("webpack-bundle.js")
@@ -48,7 +47,6 @@ module ReactOnRails
             it "returns MD5 for server bundle file name" do
               server_bundle_js_file = "webpack/production/webpack-bundle.js"
               allow(Webpacker).to receive_message_chain("manifest.lookup")
-                .with("webpack-bundle.js")
                 .and_return(server_bundle_js_file)
               allow(ReactOnRails.configuration)
                 .to receive(:server_bundle_js_file).and_return("webpack-bundle.js")
